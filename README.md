@@ -8,18 +8,42 @@ Optional FPS override and **center crop** (server‑side) with MJPEG output back
 ---
 
 ## ✨ Features
-- Open a USB UVC camera and stream in **MJPEG** (default 1280×720).
-- `startStream(fps, croppedWidth, croppedHeight)`:
-  ```dart
-    //Start the stream of the camera //dart
-    FlutterUsbCamera.startStream(fps: 30, croppedWidth: 500, croppedHeight: 500);
-  ```
-- Frames are delivered as **JPEG bytes** (individual MJPEG frames) — as *Unit8List*
+- 1. Listen for camera states first:
+   ```dart 
+   FlutterUsbCamera.setCallbacks(
+        UsbCameraCallbacks(
+          onAttach: (usbDeviceInfo) => debugPrint('onAttach: ${usbDeviceInfo?.deviceName}'),
+          onDeviceOpen: (usbDeviceInfo, isFirstOpen) => debugPrint('onDeviceOpen: ${usbDeviceInfo?.deviceName} '),
+          onCameraOpen: (usbDeviceInfo) => debugPrint('onCameraOpen'),
+          onCameraClose: (usbDeviceInfo) => debugPrint('onCameraClose'),
+          onDeviceClose: (usbDeviceInfo) => debugPrint('onDeviceClose'),
+          onDetach: (usbDeviceInfo) => debugPrint('onDetach'),
+          onCancel: (usbDeviceInfo) => debugPrint('onCancel'),
+        ),
+      );
+   ```
+- 2. Open a USB UVC camera and stream in **MJPEG** (default 1280×720) if croppedWidth, And croppedHeight are equal 0.
+   ```dart
+      //Start the stream of the camera //dart
+      FlutterUsbCamera.startStream(fps: 30, croppedWidth: 500, croppedHeight: 500);
+    ```
+- 3. Frames are delivered as **JPEG bytes** (individual MJPEG frames) — as *Unit8List*
   ```dart
    StreamSubscription<Uint8List>? _sub = FlutterUsbCamera.frames().listen((bytes) {
 
     });
   ```
+
+- 4. Don't forget to call clearCallbacks() and stopStream() in dispose()
+```dart
+  @override
+  void dispose() {
+    _sub?.cancel();
+    FlutterUsbCamera.clearCallbacks();
+    FlutterUsbCamera.stopStream();
+    super.dispose();
+  }
+```
 
 > iOS is not supported. Android only.
 
@@ -164,6 +188,7 @@ void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(home: UsbCameraPage());
@@ -172,6 +197,7 @@ class MyApp extends StatelessWidget {
 
 class UsbCameraPage extends StatefulWidget {
   const UsbCameraPage({super.key});
+
   @override
   State<UsbCameraPage> createState() => _UsbCameraPageState();
 }
@@ -183,10 +209,23 @@ class _UsbCameraPageState extends State<UsbCameraPage> {
   @override
   void initState() {
     super.initState();
+    // 1- Listen for camera states first
+    FlutterUsbCamera.setCallbacks(
+      UsbCameraCallbacks(
+        onAttach: (usbDeviceInfo) => debugPrint('onAttach: ${usbDeviceInfo?.deviceName}'),
+        onDeviceOpen: (usbDeviceInfo, isFirstOpen) => debugPrint('onDeviceOpen: ${usbDeviceInfo?.deviceName} '),
+        onCameraOpen: (usbDeviceInfo) => debugPrint('onCameraOpen'),
+        onCameraClose: (usbDeviceInfo) => debugPrint('onCameraClose'),
+        onDeviceClose: (usbDeviceInfo) => debugPrint('onDeviceClose'),
+        onDetach: (usbDeviceInfo) => debugPrint('onDetach'),
+        onCancel: (usbDeviceInfo) => debugPrint('onCancel'),
+      ),
+    );
 
-    // Start: 30 FPS, center-crop to 500x500 (set to 0 to disable crop)
-    FlutterUsbCamera.startStream(fps: 30, croppedWidth: 500, croppedHeight: 500);
+    // 2- Start: 30 FPS, center-crop to 500x500 (set to 0 to disable crop)
+    FlutterUsbCamera.startStream(fps: 30, croppedWidth: 0, croppedHeight: 0);
 
+    // 3- Get frames
     _sub = FlutterUsbCamera.frames().listen((bytes) {
       // Each event is one JPEG-encoded frame (MJPEG)
       setState(() => _lastFrame = bytes);
@@ -196,6 +235,7 @@ class _UsbCameraPageState extends State<UsbCameraPage> {
   @override
   void dispose() {
     _sub?.cancel();
+    FlutterUsbCamera.clearCallbacks();
     FlutterUsbCamera.stopStream();
     super.dispose();
   }
@@ -217,6 +257,7 @@ class _UsbCameraPageState extends State<UsbCameraPage> {
     );
   }
 }
+
 ```
 
 ### API

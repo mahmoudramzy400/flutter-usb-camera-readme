@@ -44,6 +44,11 @@ Optional FPS override and **center crop** (server‑side) with MJPEG output back
     super.dispose();
   }
 ```
+- 5. Temporary pause camera preview and resume
+```dart
+  FlutterUsbCamera.pausePreview(); //Pause Preview
+  FlutterUsbCamera.resumePreview(); //Resume Preview
+```
 
 > iOS is not supported. Android only.
 
@@ -287,6 +292,5 @@ FlutterUsbCamera.stopStream();
 - Crop is **center-crop**. If you request `500×500`, you’ll get a square cut out of the center of the camera frame.
 - USB permissions are requested by the UVC layer. If you see “has no permission”, unplug/replug or grant the dialog when prompted.
 - Some devices negotiate MJPEG 1280×720 @ 30fps easily; others may fall back. The plugin throttles delivery on the native side to the target fps to avoid flooding Flutter.
-
 
 
